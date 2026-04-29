@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>Bayswater Master Board - Final Protocol</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;700;800&family=Suez+One&display=swap');
+  :root { --gold: #c29d6d; }
+  * { box-sizing: border-box; margin: 0; padding: 0; overflow: hidden; }
+  body { background: #000; color: #fff; font-family: 'Suez One', serif; width: 100vw; height: 100vh; }
+  
+  .master-frame { height: 100vh; width: 100vw; display: flex; flex-direction: column; padding: 5px; gap: 8px; border: 12px solid var(--gold); }
+  
+  .branding-bar { height: 5.5vh; display: flex; align-items: center; justify-content: center; position: relative; border-bottom: 1px solid #333; }
+  .branding-shul { font-size: 4.2vh; color: #FDEFD4; font-weight: bold; }
+  
+  #ENG_SIDE { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); font-size: 2.5vh; color: var(--gold); font-family: 'Assistant', sans-serif; direction: ltr; font-weight: 700; white-space: nowrap; }
+  #WEATHER { color: #ccc; }
+  #BSD { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); font-size: 2.8vh; color: var(--gold); font-family: 'Assistant', sans-serif; font-weight: 700; }
+  
+  /* ── CLOCK SECTION ───────────────────────────────────────────── */
+  .clock-section {
+    height: 18vh;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    border: 2px solid var(--gold);
+    border-radius: 12px;
+    background: #050505;
+    padding: 0;
+  }
+
+  /* Lock side columns so they NEVER move */
+  .status-stack {
+    flex: 0 0 21vw;          /* fixed width, no shrink/grow */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: #050505;
+    overflow: hidden;
+  }
+
+  #DAY_LABEL, #DATE_LABEL, #PARSHA_LABEL {
+    font-size: 5.8vh;
+    line-height: 0.9;
+    white-space: nowrap;
+    padding: 0; margin: 0;
+  }
+
+  /* Clock: fills remaining space, digits never cause reflow */
+  .main-clock {
+    flex: 1 1 auto;           /* takes remaining space */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    direction: ltr !important;
+    font-size: 19vh;          /* bigger than before, no distorting scale() */
+    font-weight: 800;
+    font-family: 'Assistant', sans-serif;
+    font-variant-numeric: tabular-nums;  /* fixed-width digits — no jumping */
+    letter-spacing: -0.02em;
+    overflow: hidden;         /* stays inside its box */
+    min-width: 0;
+  }
+
+  /* Each digit unit: fixed width so 1 vs 9 never shifts layout */
+  .c-unit {
+    display: inline-block;
+    width: 2ch;               /* ch unit ties width to the font's own "0" width */
+    text-align: center;
+  }
+
+  /* Lock right column same as left */
+  .left-stack {
+    flex: 0 0 21vw;           /* fixed width, no shrink/grow */
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+    overflow: hidden;
+  }
+
+  .message-box {
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; padding: 0px 8px;
+  }
+
+  .teal-box { background: #004d40; color: #00bfa5; } 
+  .gold-box { color: var(--gold); background: #050505; }
+  #status-head { font-size: 6.2vh; line-height: 1.0; display: block; width: 100%; }
+  #status-sub { font-size: 3.2vh; color: white; display: block; width: 100%; white-space: normal; line-height: 0.9; }
+
+  /* ── MAIN BODY ───────────────────────────────────────────────── */
+  .main-body { height: 71vh; display: flex; gap: 10px; }
+  .zemanim-col { width: 21vw; border: 2px solid var(--gold); border-radius: 10px; display: flex; flex-direction: column; padding: 2px; background: #050505; }
+  .z-row { display: flex; justify-content: space-between; padding: 0px 8px; border-bottom: 1px solid #222; align-items: center; flex: 1; }
+  .z-label { color: var(--gold); font-size: 3.1vh; }
+  .z-time { color: white; font-size: 2.7vh; font-family: 'Assistant', sans-serif; font-weight: 800; direction: ltr; }
+  .active-zman { background: var(--gold) !important; }
+  .active-zman .z-label, .active-zman .z-time { color: #000 !important; }
+
+  .content-col { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+  .data-box { flex: 1.2; border: 2px solid var(--gold); border-radius: 10px; background: #080808; display: flex; align-items: center; justify-content: center; text-align: center; padding: 0; overflow: hidden; }
+  .data-box span { font-weight: 800; font-size: 4.8vh; line-height: 1.1; display: block; width: 100%; word-wrap: break-word; }
+  
+  .img-box { flex: 1.5; border: 2px solid var(--gold); border-radius: 10px; background: #000; overflow: hidden; position: relative; }
+  /* FIX #5: Added opacity transition for smooth fade */
+  .img-box img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; transition: opacity 0.8s ease-in-out; }
+  
+  .omer-box { flex: 1.3; border: 2px solid var(--gold); border-radius: 10px; background: #001f1a; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; text-align: center; }
+  #O2 { color: var(--gold); font-weight: 800; line-height: 1.0; width: 94%; display: block; margin: 0 auto; word-wrap: break-word; }
+  #O_BECHINA { font-size: 3.5vh; color: #fff; border-top: 1px solid #444; padding-top: 2px; margin-top: 6px; width: 90%; }
+  .secs { font-size: 0.75em; opacity: 0.6; font-weight: 400; margin-left: 1px; }
+
+  #SLEEP_OVERLAY { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: black; z-index: 10000; display: none; }
+  #SLEEP_CLOCK { position: absolute; color: #444; font-family: 'Assistant', sans-serif; font-size: 8vh; font-weight: 700; transition: all 2.0s ease-in-out; white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<div id="SLEEP_OVERLAY"><div id="SLEEP_CLOCK">00:00:00</div></div>
+
+<div class="master-frame">
+  <div class="branding-bar">
+    <div id="ENG_SIDE"><span id="ENG_DATE"></span><span id="WEATHER"></span></div>
+    <div class="branding-shul">קהל חסידים ד'בעיסוואטער</div>
+    <div id="BSD">בס"ד</div> 
+  </div>
+
+  <div class="clock-section">
+    <div class="status-stack">
+        <div id="DAY_LABEL">--</div> 
+        <div id="DATE_LABEL" style="color: var(--gold);">--</div> 
+        <div id="PARSHA_LABEL" style="color: #ccc;">--</div>
+    </div>
+    <div class="main-clock" id="CLOCK">00:00:00</div>
+    <div class="left-stack" id="LEFT_MSG"></div>
+  </div>
+
+  <div class="main-body">
+    <div class="zemanim-col" id="ZMANIM_LIST">
+        <div class="z-row" id="r1"><span class="z-label">עלות השחר</span><span class="z-time" id="z1">--:--</span></div>
+        <div class="z-row" id="r2"><span class="z-label">הנחת תפילין</span><span class="z-time" id="z2">--:--</span></div>
+        <div class="z-row" id="r3"><span class="z-label">נץ החמה</span><span class="z-time" id="z3">--:--</span></div>
+        <div class="z-row" id="r4"><span class="z-label">סוף זק"ש מג"א</span><span class="z-time" id="z4">--:--</span></div>
+        <div class="z-row" id="r5"><span class="z-label">סוף זק"ש גר"א</span><span class="z-time" id="z5">--:--</span></div>
+        <div class="z-row" id="r6"><span class="z-label">סוף זמן תפילה</span><span class="z-time" id="z6">--:--</span></div>
+        <div class="z-row" id="r7"><span class="z-label">חצות היום</span><span class="z-time" id="z7">--:--</span></div>
+        <div class="z-row" id="r8"><span class="z-label">מנחה גדולה</span><span class="z-time" id="z8">--:--</span></div>
+        <div class="z-row" id="r9"><span class="z-label">פלג המנחה</span><span class="z-time" id="z9">--:--</span></div>
+        <div class="z-row" id="row_special" style="display:none; background:#1a3a3a;"><span class="z-label">הדלקת נרות</span><span class="z-time" id="z_spec_time">--:--</span></div>
+        <div class="z-row" id="r10"><span class="z-label">שקיעת החמה</span><span class="z-time" id="z10">--:--</span></div>
+        <div class="z-row" id="r11" style="background:#2b2400;"><span class="z-label">רבינו תם</span><span class="z-time" id="z11">--:--</span></div>
+    </div>
+
+    <div class="content-col">
+      <div style="height:48%; display:flex; gap:10px;">
+          <div class="data-box" style="flex:1.2;"><span id="ANN"></span></div>
+          <div class="img-box" style="flex:1.5;"><img id="p1" src=""></div>
+          <div class="data-box" style="flex:1.2;"><span id="TEF"></span></div>
+      </div>
+      <div style="height:48%; display:flex; gap:10px;">
+          <div class="img-box" style="flex:1.4;"><img id="p4" src=""></div>
+          <div class="omer-box" id="OMER">
+              <span id="O2"></span>
+              <div id="O_BECHINA"></div>
+          </div>
+          <div class="img-box" style="flex:1.4;"><img id="p5" src=""></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/**
+ * THE BAYSWATER PROTOCOL - MASTER RULES
+ * ---------------------------------------------------
+ * 1. CLOCK: 12h format with ticking seconds.
+ * 2. MATH: Rabbeinu Tam (Zman 11) = Sched + 1 Min | Candles = Sched - 1 Min.
+ * 3. FLIP LOGIC: Date/Parsha at Alos | Omer 25m before Rabbeinu Tam.
+ * 4. STATUS BOX: Shabbat, Motzaei, Tachanun, or Default msg.
+ * 5. NIGHT MODE: 1:00 AM - 5:00 AM Blackout with Jumping Clock.
+ * 6. DYNAMIC OVERRIDE: Stays Awake if Col D includes "שבועות".
+ * 7. OMER BOX HIERARCHY: Moled (9 AM-12:30 PM) | Col D (Holiday) | Omer | Col F (Summer).
+ * 8. HOLIDAY PRIORITY: Col D (Holiday) overrides Motzei Shabbat and Tachanun labels.
+ * 9. VATODI'EINU SHIELD: If Col D has text on Saturday night, display "ותודיענו" instead of "אתה חוננתנו".
+ */
+const $ = id => document.getElementById(id);
+var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyjNSAvH290v-6SFkXHJfFHAr8Kh4UlmZxAIQf7-PFFFHWTNOkYDGTggyPz130gG6_Low/exec"; 
+
+var defaultSummerMsg = "", p1Images = [], p1Index = 0;
+var schedule = {}, lastDateIso = "", currentStatusHTML = "", currentlyHighlightedId = null;
+
+// FIX #1: Corrected typo on day 10 — "ששלשה" → "שלשה"
+const OMER_STRINGS = { 1:"יום אחד", 2:"שני ימים", 3:"שלשה ימים", 4:"ארבעה ימים", 5:"חמשה ימים", 6:"ששה ימים", 7:"שבוע אחד", 8:"שמונה ימים שהם שבוע אחד ויום אחד", 9:"תשעה ימים שהם שבוע אחד ושני ימים", 10:"עשרה ימים שהם שבוע אחד ושלשה ימים", 11:"אחד עשר יום שהם שבוע אחד וארבעה ימים", 12:"שנים עשר יום שהם שבוע אחד וחמשה ימים", 13:"שלשה עשר יום שהם שבוע אחד וששה ימים", 14:"ארבעה עשר יום שהם שני שבועות", 15:"חמשה עשר יום שהם שני שבועות ויום אחד", 16:"ששה עשר יום שהם שני שבועות ושני ימים", 17:"שבעה עשר יום שהם שני שבועות ושלשה ימים", 18:"שמונה עשר יום שהם שני שבועות וארבעה ימים", 19:"תשעה עשר יום שהם שני שבועות וחמשה ימים", 20:"עשרים יום שהם שני שבועות וששה ימים", 21:"אחד ועשרים יום שהם שלשה שבועות", 22:"שנים ועשרים יום שהם שלשה שבועות ויום אחד", 23:"שלשה ועשרים יום שהם שלשה שבועות ושני ימים", 24:"ארבעה ועשרים יום שהם שלשה שבועות ושלשה ימים", 25:"חמשה ועשרים יום שהם שלשה שבועות וארבעה ימים", 26:"ששה ועשרים יום שהם שלשה שבועות וחמשה ימים", 27:"שבעה ועשרים יום שהם שלשה שבועות וששה ימים", 28:"שמונה ועשרים יום שהם ארבעה שבועות", 29:"תשעה ועשרים יום שהם ארבעה שבועות ויום אחד", 30:"שלשים יום שהם ארבעה שבועות ושני ימים", 31:"אחד ושלשים יום שהם ארבעה שבועות ושלשה ימים", 32:"שנים ושלשים יום שהם ארבעה שבועות וארבעה ימים", 33:"שלשה ושלשים יום שהם ארבעה שבועות וחמשה ימים", 34:"ארבעה ושלשים יום שהם ארבעה שבועות וששה ימים", 35:"חמשה ושלשים יום שהם חמשה שבועות", 36:"ששה ושלשים יום שהם חמשה שבועות ויום אחד", 37:"שבעה ושלשים יום שהם חמשה שבועות ושני ימים", 38:"שמונה ושלשים יום שהם חמשה שבועות ושלשה ימים", 39:"תשעה ושלשים יום שהם חמשה שבועות וארבעה ימים", 40:"ארבעים יום שהם חמשה שבועות וחמשה ימים", 41:"אחד וארבעים יום שהם חמשה שבועות וששה ימים", 42:"שנים וארבעים יום שהם ששה שבועות", 43:"שלשה וארבעים יום שהם ששה שבועות ויום אחד", 44:"ארבעה וארבעים יום שהם ששה שבועות ושני ימים", 45:"חמשה וארבעים יום שהם ששה שבועות ושלשה ימים", 46:"ששה וארבעים יום שהם ששה שבועות וארבעה ימים", 47:"שבעה וארבעים יום שהם ששה שבועות וחמשה ימים", 48:"שמונה וארבעים יום שהם ששה שבועות וששה ימים", 49:"תשעה וארבעים יום שהם שבעה שבועות" };
+const DAY_MAP = { "Sun": "יום ראשון", "Mon": "יום שני", "Tue": "יום שלישי", "Wed": "יום רביעי", "Thu": "יום חמישי", "Fri": "ערב ש\"ק", "Sha": "שבת קודש", "Sat": "שבת קודש" };
+
+function shiftTime(t, o) {
+    if (!t || t.includes("--")) return "--:--:--";
+    let p = t.split(':'), h = parseInt(p[0]), m = parseInt(p[1]), s = parseInt(p[2]||0);
+    let total = (h*3600) + (m*60) + s + (o * 60);
+    let nh = Math.floor(total / 3600), nm = Math.floor((total % 3600) / 60), ns = total % 60;
+    if (nh > 12) nh -= 12; if (nh === 0) nh = 12;
+    return nh + ":" + String(nm).padStart(2, '0') + ":" + String(ns).padStart(2, '0');
+}
+function fmtZman(t) {
+    if (!t || t.includes("--")) return "--:--";
+    let c = t.replace(/(AM|PM|am|pm)/g, "").trim();
+    let p = c.split(':');
+    return `${p[0]}:${p[1]}<span class="secs">:${p[2] || "00"}</span>`;
+}
+function getSec(t, pm) {
+    if (!t || t.includes("--")) return 0;
+    let p = t.split(':'), h = parseInt(p[0]), m = parseInt(p[1]), s = parseInt(p[2]||0);
+    if (pm && h < 12) h += 12;
+    return (h * 3600) + (m * 60) + s;
+}
+function getIso(d) { return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,'0') + "-" + String(d.getDate()).padStart(2,'0'); }
+
+function fit(el, vhStart) {
+    if (!el) return;
+    let p = el.parentElement; let vh = vhStart; el.style.fontSize = vh + "vh";
+    while (p.scrollHeight > p.clientHeight && vh > 1.0) { vh -= 0.1; el.style.fontSize = vh + "vh"; }
+}
+
+function updateClock() {
+    let now = new Date(); 
+    let h = now.getHours(), hh = (h % 12 || 12), mm = String(now.getMinutes()).padStart(2, '0'), ss = String(now.getSeconds()).padStart(2, '0');
+    $('CLOCK').innerHTML = `<span class="c-unit">${hh}</span>:<span class="c-unit">${mm}</span>:<span class="c-unit">${ss}</span>`;
+    $('ENG_DATE').innerText = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+function loadWeather() {
+    fetch("https://api.open-meteo.com/v1/forecast?latitude=40.598&longitude=-73.765&current_weather=true&temperature_unit=fahrenheit")
+    .then(r => r.json()).then(d => { if(d.current_weather) $('WEATHER').innerText = " | " + Math.round(d.current_weather.temperature) + "°F"; });
+}
+
+function rotateP1() {
+    if (p1Images.length === 0) return;
+    $('p1').style.opacity = 0;
+    setTimeout(() => {
+        $('p1').src = "https://drive.google.com/thumbnail?id=" + p1Images[p1Index] + "&sz=w1200";
+        $('p1').style.opacity = 1;
+        p1Index = (p1Index + 1) % p1Images.length;
+    }, 800); 
+}
+
+function updateUI() {
+    let now = new Date(); 
+    let h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+
+    // --- 1. DATA PREP ---
+    let cSec = (h*3600) + (m*60) + s;
+    let dToday = schedule[getIso(now)]; if (!dToday) return;
+    let holidayText = dToday.holidayText || ""; 
+
+    // --- 2. THE DYNAMIC SHAVUOS STAY-AWAKE ---
+    let isHolidayStayAwake = holidayText.includes("שבועות");
+
+    // --- 3. SLEEP PROTOCOL (1 AM - 5 AM) ---
+    if (!isHolidayStayAwake && h >= 1 && h < 5) {
+        $('SLEEP_OVERLAY').style.display = 'block';
+        $('SLEEP_CLOCK').innerText = (h % 12 || 12) + ":" + String(m).padStart(2, '0') + ":" + String(s).padStart(2, '0');
+        if (s === 0) {
+            let rx = Math.floor(Math.random() * 70) + 5, ry = Math.floor(Math.random() * 80) + 5;
+            $('SLEEP_CLOCK').style.left = rx + "vw"; $('SLEEP_CLOCK').style.top = ry + "vh";
+        }
+        return; 
+    } else { $('SLEEP_OVERLAY').style.display = 'none'; }
+
+    // --- 4. ZMANIM & FLIP LOGIC ---
+    let rtSecs = getSec(dToday.z[10], true);
+    let oIso = (cSec >= (rtSecs - 1500)) ? getIso(new Date(now.getTime() + 86400000)) : getIso(now);
+    let dIso = (cSec < getSec(dToday.z[0], false)) ? getIso(new Date(now.getTime() - 86400000)) : getIso(now);
+    let dOmer = schedule[oIso] || dToday, dDate = schedule[dIso] || dToday;
+    
+    if (dIso !== lastDateIso) {
+        lastDateIso = dIso;
+        $('DAY_LABEL').innerText = DAY_MAP[dDate.day] || dDate.day;
+        $('DATE_LABEL').innerText = dDate.heb;
+        $('PARSHA_LABEL').innerText = dDate.parsha ? "פרשת " + dDate.parsha : "";
+        for (let i=1; i<=11; i++) {
+            let bt = dDate.z[i-1];
+            $('z'+i).innerHTML = fmtZman((i === 11) ? shiftTime(bt, 1) : bt);
+        }
+    }
+    
+    if (now.getDay() === 5) {
+        $('row_special').style.display = 'flex';
+        $('z_spec_time').innerHTML = fmtZman(shiftTime(dToday.candle || dToday.z[9], -1));
+    } else { $('row_special').style.display = 'none'; }
+    
+    // --- 5. OMER / MOLED / HOLIDAY BOX ---
+    let moledText = dDate.moled || "";
+    let isMoledTime = (cSec >= 32400 && cSec <= 45000); 
+    let omerKey = dOmer.omerNum ? String(dOmer.omerNum).trim() : null;
+    let summerMsg = dOmer.clmF || defaultSummerMsg; 
+
+    if (isMoledTime && moledText !== "") {
+        $('O2').innerText = moledText;
+        $('O_BECHINA').style.display = 'none';
+    } else if (holidayText !== "") {
+        $('O2').innerText = holidayText;
+        $('O_BECHINA').style.display = 'none';
+    } else if (omerKey) {
+        $('O2').innerText = "היום " + (OMER_STRINGS[omerKey] || omerKey + " יום") + " לעומר";
+        if (dOmer.bechina) { $('O_BECHINA').innerText = dOmer.bechina; $('O_BECHINA').style.display = 'block'; }
+        else { $('O_BECHINA').style.display = 'none'; }
+    } else {
+        $('O2').innerText = summerMsg;
+        $('O_BECHINA').style.display = 'none';
+    }
+    fit($('O2'), 5.5); fit($('O_BECHINA'), 3.8);
+
+    // --- 6. STATUS BOX (Top Left) ---
+    let tR = (dDate.tachReason || "").trim(); 
+    let hText = (holidayText || "").trim();
+    
+    let dayW = now.getDay();
+    let isShab = (dayW===5 && dToday.candle && cSec >= getSec(dToday.candle,true)) || (dayW===6 && cSec < rtSecs);
+    let isMotz = (dayW===6 && cSec >= rtSecs);
+    
+    let head = "";
+    let sub = "";
+
+    if (isShab) {
+        head = (moledText && isMoledTime) ? "שבת מברכים" : "שבת קודש";
+        sub = hText; 
+    } else if (hText !== "") { 
+        head = hText; 
+        sub = isMotz ? "ותודיענו" : tR; 
+    } else if (isMotz) {
+        head = "מוצאי שבת";
+        sub = "אתה חוננתנו";
+    } else if (tR !== "") {
+        head = "אין אומרים תחנון";
+        sub = tR;
+    } else {
+        head = "מוריד הטל";
+        sub = "ותן ברכה";
+    }
+    
+    let cls = "gold-box";
+    if (!isShab && !isMotz && (hText !== "" || tR !== "")) {
+        cls = "teal-box";
+    }
+
+    let sH = `<div class="message-box ${cls}"><span id="status-head">${head}</span><span id="status-sub">${sub}</span></div>`;
+    
+    if (sH !== currentStatusHTML) { 
+        $('LEFT_MSG').innerHTML = sH; 
+        currentStatusHTML = sH; 
+        fit($('status-head'), 6.0); 
+        fit($('status-sub'), 3.0);
+    }
+
+    let currentZmanTimes = [];
+    for(let i=1; i<=11; i++) currentZmanTimes.push({id: 'r'+i, sec: getSec(dDate.z[i-1], i>=7)});
+    let nIdx = currentZmanTimes.findIndex(z => z.sec > cSec), tgtId = nIdx !== -1 ? currentZmanTimes[nIdx].id : null;
+    if (tgtId !== currentlyHighlightedId) {
+        document.querySelectorAll('.z-row').forEach(r => r.classList.remove('active-zman'));
+        if (tgtId && $(tgtId)) $(tgtId).classList.add('active-zman');
+        currentlyHighlightedId = tgtId;
+    }
+}
+
+function loadData() {
+    fetch(SCRIPT_URL + "?cb=" + new Date().getTime()).then(r => r.json()).then(d => {
+        if (!d) return;
+        schedule = d.schedule;
+        defaultSummerMsg = d.defaultMsg || "";
+        p1Images = d.p1List || [];
+        if (p1Images.length > 0 && !$('p1').getAttribute('src')) { rotateP1(); }
+        $('ANN').innerText = d.announcements || ""; fit($('ANN'), 4.8);
+        $('TEF').innerText = d.tefila || ""; fit($('TEF'), 4.8);
+        if (d.p4) $('p4').src = "https://drive.google.com/thumbnail?id="+d.p4+"&sz=w1200";
+        if (d.p5) $('p5').src = "https://drive.google.com/thumbnail?id="+d.p5+"&sz=w1200";
+    });
+}
+
+// FIX #2: updateUI() called immediately so there's no 1-second blank on load
+setInterval(updateClock, 1000); updateClock(); loadWeather(); setInterval(loadWeather, 900000);
+loadData(); setInterval(loadData, 30000); setInterval(updateUI, 1000); updateUI();
+</script>
+</body>
+</html>
