@@ -374,7 +374,7 @@ function loadData() {
         schedule = d.schedule;
         defaultSummerMsg = d.defaultMsg || "";
         p1Images = d.p1List || [];
-        if (p1Images.length > 0 && !$('p1').getAttribute('src')) { rotateP1(); }
+        if (p1Images.length > 0) { rotateP1(); }
         $('ANN').innerText = d.announcements || ""; fit($('ANN'), 4.8);
         $('TEF').innerText = d.tefila || ""; fit($('TEF'), 4.8);
         if (d.p4) $('p4').src = "https://drive.google.com/thumbnail?id="+d.p4+"&sz=w1200";
