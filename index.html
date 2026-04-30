@@ -24,13 +24,14 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    /* FIX #6: faint divider lines via border on clock sides (done via pseudo-borders on main-clock) */
     border: 2px solid var(--gold);
     border-radius: 12px;
     background: #050505;
     padding: 0;
   }
 
-  /* Lock side columns so they NEVER move */
+  /* Right date/day column — locked width */
   .status-stack {
     flex: 0 0 24vw;
     height: 100%;
@@ -40,6 +41,7 @@
     align-items: center;
     background: #050505;
     overflow: hidden;
+    border-radius: 10px 0 0 10px;
   }
 
   #DAY_LABEL, #DATE_LABEL, #PARSHA_LABEL {
@@ -49,9 +51,9 @@
     padding: 0; margin: 0;
   }
 
-  /* Clock: fills remaining space, digits never cause reflow */
+  /* FIX #6: faint divider lines between clock and side columns */
   .main-clock {
-    flex: 1 1 auto;           /* takes remaining space */
+    flex: 1 1 auto;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -59,40 +61,52 @@
     font-size: 19vh;
     font-weight: 800;
     font-family: 'Assistant', sans-serif;
-    font-variant-numeric: tabular-nums;  /* fixed-width digits — no jumping */
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
-    overflow: hidden;         /* stays inside its box */
+    overflow: hidden;
     min-width: 0;
+    border-left: 1px solid #2a2a2a;
+    border-right: 1px solid #2a2a2a;
   }
 
-  /* Each digit unit: fixed width so 1 vs 9 never shifts layout */
+  /* FIX #2: Hour unit — no fixed width, right-aligned so single digit hugs colon */
+  .c-hour {
+    display: inline-block;
+    text-align: right;
+    min-width: 1ch;
+  }
+
+  /* Minute/second units stay fixed-width so they never jump */
   .c-unit {
     display: inline-block;
     width: 2ch;
     text-align: center;
   }
 
-  /* Right status column — wider so long text never gets tiny */
+  /* FIX #1 & #5: Status box — wider, right corners rounded to match clock border */
   .left-stack {
-    flex: 0 0 24vw;
+    flex: 0 0 26vw;      /* FIX #1: widened from 24vw → 26vw */
     height: 100%;
     display: flex;
     align-items: stretch;
     justify-content: stretch;
     overflow: hidden;
+    border-radius: 0 10px 10px 0;  /* FIX #5: right side rounded */
   }
 
   .message-box {
     width: 100%; height: 100%;
     display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    text-align: center; padding: 0px 8px;
+    align-items: center; justify-content: space-evenly;
+    text-align: center; padding: 4px 10px;
   }
 
-  .teal-box { background: #004d40; color: #00bfa5; } 
+  .teal-box { background: #004d40; color: #00bfa5; }
   .gold-box { color: var(--gold); background: #050505; }
+
   #status-head { font-size: 6.2vh; line-height: 1.0; display: block; width: 100%; }
-  #status-sub { font-size: 3.2vh; color: white; display: block; width: 100%; white-space: normal; line-height: 0.9; }
+  #status-sub  { font-size: 3.2vh; color: white; display: block; width: 100%; white-space: normal; line-height: 1.0; }
+  #status-kl   { font-size: 3.0vh; color: #aaffcc; display: block; width: 100%; line-height: 1.0; }
 
   /* ── MAIN BODY ───────────────────────────────────────────────── */
   .main-body { height: 70vh; display: flex; gap: 10px; }
@@ -108,12 +122,12 @@
   .data-box span { font-weight: 800; font-size: 4.8vh; line-height: 1.1; display: block; width: 100%; word-wrap: break-word; }
   
   .img-box { flex: 1.5; border: 2px solid var(--gold); border-radius: 10px; background: #000; overflow: hidden; position: relative; }
-  /* FIX #5: Added opacity transition for smooth fade */
   .img-box img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; transition: opacity 0.8s ease-in-out; }
   
-  .omer-box { flex: 1.3; border: 2px solid var(--gold); border-radius: 10px; background: #001f1a; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; text-align: center; }
-  #O2 { color: var(--gold); font-weight: 800; line-height: 1.0; width: 94%; display: block; margin: 0 auto; word-wrap: break-word; }
-  #O_BECHINA { font-size: 3.5vh; color: #fff; border-top: 1px solid #444; padding-top: 2px; margin-top: 6px; width: 90%; }
+  /* FIX #4: Omer box — tighter layout, overflow protected */
+  .omer-box { flex: 1.3; border: 2px solid var(--gold); border-radius: 10px; background: #001f1a; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4px 6px; text-align: center; overflow: hidden; }
+  #O2 { color: var(--gold); font-weight: 800; line-height: 1.0; width: 96%; display: block; margin: 0 auto; word-wrap: break-word; overflow: hidden; }
+  #O_BECHINA { font-size: 3.5vh; color: #fff; border-top: 1px solid #444; padding-top: 2px; margin-top: 4px; width: 90%; overflow: hidden; }
   .secs { font-size: 0.75em; opacity: 0.75; color: #fff; font-weight: 700; margin-left: 1px; }
 
   #SLEEP_OVERLAY { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: black; z-index: 10000; display: none; }
@@ -137,7 +151,10 @@
         <div id="DATE_LABEL" style="color: var(--gold);">--</div> 
         <div id="PARSHA_LABEL" style="color: #ccc;">--</div>
     </div>
-    <div class="main-clock" id="CLOCK">00:00:00</div>
+    <!-- FIX #2: hour uses c-hour (no fixed width, right-aligned), minutes/seconds use c-unit -->
+    <div class="main-clock" id="CLOCK">
+      <span class="c-hour">0</span>:<span class="c-unit">00</span>:<span class="c-unit">00</span>
+    </div>
     <div class="left-stack" id="LEFT_MSG"></div>
   </div>
 
@@ -177,28 +194,108 @@
 
 <script>
 /**
- * THE BAYSWATER PROTOCOL - MASTER RULES
- * ---------------------------------------------------
- * 1. CLOCK: 12h format with ticking seconds.
- * 2. MATH: Rabbeinu Tam (Zman 11) = Sched + 1 Min | Candles = Sched - 1 Min.
- * 3. FLIP LOGIC: Date/Parsha at Alos | Omer 25m before Rabbeinu Tam.
- * 4. STATUS BOX: Shabbat, Motzaei, Tachanun, or Default msg.
- * 5. NIGHT MODE: 1:00 AM - 5:00 AM Blackout with Jumping Clock.
- * 6. DYNAMIC OVERRIDE: Stays Awake if Col D includes "שבועות".
- * 7. OMER BOX HIERARCHY: Moled (9 AM-12:30 PM) | Col D (Holiday) | Omer | Col F (Summer).
- * 8. HOLIDAY PRIORITY: Col D (Holiday) overrides Motzei Shabbat and Tachanun labels.
- * 9. VATODI'EINU SHIELD: If Col D has text on Saturday night, display "ותודיענו" instead of "אתה חוננתנו".
+ * THE BAYSWATER PROTOCOL - MASTER RULES v2
+ * ─────────────────────────────────────────────────────────────────
+ * RULE 1  CLOCK          12h format with ticking seconds.
+ * RULE 2  MATH           Rabbeinu Tam = Sched + 1 Min | Candles = Sched - 1 Min.
+ * RULE 3  FLIP LOGIC     Date/Parsha flips at Alos | Omer flips 25m before Rabbeinu Tam.
+ * RULE 4  STATUS BOX     Priority order: Shabbos > Yom Tov > Motzei Shabbos > Tachanun > Default.
+ * RULE 5  NIGHT MODE     1:00 AM – 5:00 AM blackout with jumping clock.
+ * RULE 6  STAY AWAKE     Night mode disabled when Col D contains "שבועות".
+ * RULE 7  OMER BOX       Hierarchy: Moled display (9 AM–12:30 PM) > Col D holiday > Omer > Col F summer msg.
+ * RULE 8  HOLIDAY PRIO   Col D text overrides Motzei Shabbos and Tachanun labels.
+ * RULE 9  VATODIEINU     Saturday night + Col D text → show "ותודיענו" instead of "אתה חוננתנו".
+ * RULE 10 KIDDUSH LEVANA Show "קידוש לבנה" as line 3 of status box from 7 full days (168h) after
+ *                        molad timestamp until 15 full days (360h) after molad timestamp.
+ *                        SUPPRESS on: Shabbos, Yom Tov, Friday, Nine Days (1–9 Av by Hebrew date).
+ * ─────────────────────────────────────────────────────────────────
+ * MOLED SHEET FORMAT (Column A, one entry per month):
+ *   "DayName, Month DD, YYYY, H:MM am/pm and X chalakim"
+ *   Example: "Saturday, May 16, 2026, 6:02 pm and 15 chalakim"
+ *   The date+time is the CIVIL timestamp of the molad.
+ * ─────────────────────────────────────────────────────────────────
  */
+
 const $ = id => document.getElementById(id);
-var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyjNSAvH290v-6SFkXHJfFHAr8Kh4UlmZxAIQf7-PFFFHWTNOkYDGTggyPz130gG6_Low/exec"; 
+var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyjNSAvH290v-6SFkXHJfFHAr8Kh4UlmZxAIQf7-PFFFHWTNOkYDGTggyPz130gG6_Low/exec";
 
 var defaultSummerMsg = "", p1Images = [], p1Index = 0;
-var schedule = {}, lastDateIso = "", currentStatusHTML = "", currentlyHighlightedId = null;
+var schedule = {}, moladList = [], lastDateIso = "", currentStatusHTML = "", currentlyHighlightedId = null;
 
-// FIX #1: Corrected typo on day 10 — "ששלשה" → "שלשה"
 const OMER_STRINGS = { 1:"יום אחד", 2:"שני ימים", 3:"שלשה ימים", 4:"ארבעה ימים", 5:"חמשה ימים", 6:"ששה ימים", 7:"שבוע אחד", 8:"שמונה ימים שהם שבוע אחד ויום אחד", 9:"תשעה ימים שהם שבוע אחד ושני ימים", 10:"עשרה ימים שהם שבוע אחד ושלשה ימים", 11:"אחד עשר יום שהם שבוע אחד וארבעה ימים", 12:"שנים עשר יום שהם שבוע אחד וחמשה ימים", 13:"שלשה עשר יום שהם שבוע אחד וששה ימים", 14:"ארבעה עשר יום שהם שני שבועות", 15:"חמשה עשר יום שהם שני שבועות ויום אחד", 16:"ששה עשר יום שהם שני שבועות ושני ימים", 17:"שבעה עשר יום שהם שני שבועות ושלשה ימים", 18:"שמונה עשר יום שהם שני שבועות וארבעה ימים", 19:"תשעה עשר יום שהם שני שבועות וחמשה ימים", 20:"עשרים יום שהם שני שבועות וששה ימים", 21:"אחד ועשרים יום שהם שלשה שבועות", 22:"שנים ועשרים יום שהם שלשה שבועות ויום אחד", 23:"שלשה ועשרים יום שהם שלשה שבועות ושני ימים", 24:"ארבעה ועשרים יום שהם שלשה שבועות ושלשה ימים", 25:"חמשה ועשרים יום שהם שלשה שבועות וארבעה ימים", 26:"ששה ועשרים יום שהם שלשה שבועות וחמשה ימים", 27:"שבעה ועשרים יום שהם שלשה שבועות וששה ימים", 28:"שמונה ועשרים יום שהם ארבעה שבועות", 29:"תשעה ועשרים יום שהם ארבעה שבועות ויום אחד", 30:"שלשים יום שהם ארבעה שבועות ושני ימים", 31:"אחד ושלשים יום שהם ארבעה שבועות ושלשה ימים", 32:"שנים ושלשים יום שהם ארבעה שבועות וארבעה ימים", 33:"שלשה ושלשים יום שהם ארבעה שבועות וחמשה ימים", 34:"ארבעה ושלשים יום שהם ארבעה שבועות וששה ימים", 35:"חמשה ושלשים יום שהם חמשה שבועות", 36:"ששה ושלשים יום שהם חמשה שבועות ויום אחד", 37:"שבעה ושלשים יום שהם חמשה שבועות ושני ימים", 38:"שמונה ושלשים יום שהם חמשה שבועות ושלשה ימים", 39:"תשעה ושלשים יום שהם חמשה שבועות וארבעה ימים", 40:"ארבעים יום שהם חמשה שבועות וחמשה ימים", 41:"אחד וארבעים יום שהם חמשה שבועות וששה ימים", 42:"שנים וארבעים יום שהם ששה שבועות", 43:"שלשה וארבעים יום שהם ששה שבועות ויום אחד", 44:"ארבעה וארבעים יום שהם ששה שבועות ושני ימים", 45:"חמשה וארבעים יום שהם ששה שבועות ושלשה ימים", 46:"ששה וארבעים יום שהם ששה שבועות וארבעה ימים", 47:"שבעה וארבעים יום שהם ששה שבועות וחמשה ימים", 48:"שמונה וארבעים יום שהם ששה שבועות וששה ימים", 49:"תשעה וארבעים יום שהם שבעה שבועות" };
 const DAY_MAP = { "Sun": "יום ראשון", "Mon": "יום שני", "Tue": "יום שלישי", "Wed": "יום רביעי", "Thu": "יום חמישי", "Fri": "ערב ש\"ק", "Sha": "שבת קודש", "Sat": "שבת קודש" };
 
+// ── MOLAD PARSING ─────────────────────────────────────────────────
+// Input format: "Saturday, May 16, 2026, 6:02 pm and 15 chalakim"
+// Returns a JS Date object (local time) or null if unparseable.
+function parseMoladEntry(str) {
+    if (!str) return null;
+    try {
+        // Strip day name (ends at first comma), then parse "Month DD, YYYY, H:MM am/pm and X chalakim"
+        let withoutDay = str.replace(/^[^,]+,\s*/, ""); // "May 16, 2026, 6:02 pm and 15 chalakim"
+        // Split on last comma before time: "May 16, 2026" | "6:02 pm and 15 chalakim"
+        let parts = withoutDay.match(/^(.+?),\s*(\d+):(\d+)\s*(am|pm)\s+and\s+(\d+)\s+chalakim/i);
+        if (!parts) return null;
+        let datePart = parts[1].trim();   // "May 16, 2026"
+        let hour     = parseInt(parts[2]);
+        let min      = parseInt(parts[3]);
+        let ampm     = parts[4].toLowerCase();
+        let chalakim = parseInt(parts[5]);
+
+        // Convert chalakim to extra seconds (1 chelek = 10/3 seconds)
+        let extraSec = Math.round(chalakim * 10 / 3);
+
+        if (ampm === "pm" && hour !== 12) hour += 12;
+        if (ampm === "am" && hour === 12) hour = 0;
+
+        // Build date string parseable by JS: "May 16, 2026 18:02:00"
+        let d = new Date(datePart + " " + String(hour).padStart(2,"0") + ":" + String(min).padStart(2,"0") + ":00");
+        if (isNaN(d.getTime())) return null;
+        d.setSeconds(extraSec);
+        return d;
+    } catch(e) { return null; }
+}
+
+// ── KIDDUSH LEVANA ELIGIBILITY ────────────────────────────────────
+// Returns true if קידוש לבנה should be shown RIGHT NOW.
+// SUPPRESS on: Shabbos, Yom Tov (holidayText), Friday (day 5), Nine Days (1–9 Av).
+function getKiddushLevana(now, hebDate, isShab, holidayText, dayOfWeek) {
+    // Must be outside Shabbos, Yom Tov, and Friday
+    if (isShab) return false;
+    if (holidayText && holidayText.trim() !== "") return false;
+    if (dayOfWeek === 5) return false; // Friday
+
+    // Nine Days: suppress when Hebrew date is 1 Av – 9 Av
+    // hebDate format from sheet e.g. "א' אב תשפ"ו" — check for אב + day number 1-9
+    if (isNineDays(hebDate)) return false;
+
+    // Find the most recent molad before now
+    let nowMs = now.getTime();
+    let bestMolad = null;
+    for (let m of moladList) {
+        if (m && m.getTime() <= nowMs) {
+            if (!bestMolad || m.getTime() > bestMolad.getTime()) bestMolad = m;
+        }
+    }
+    if (!bestMolad) return false;
+
+    let elapsedHours = (nowMs - bestMolad.getTime()) / 3600000;
+    return (elapsedHours >= 168 && elapsedHours < 360); // 7 days to 15 days
+}
+
+// Detect Nine Days: 1 Av through 9 Av using the Hebrew date string from the schedule.
+// The Hebrew date column contains values like "א' אב תשפ"ו", "ט' אב תשפ"ו" etc.
+function isNineDays(hebDate) {
+    if (!hebDate || !hebDate.includes("אב")) return false;
+    // Extract the day prefix (Hebrew letter/numeral before the space)
+    const avDays = ["א'","ב'","ג'","ד'","ה'","ו'","ז'","ח'","ט'"]; // 1–9
+    for (let d of avDays) {
+        if (hebDate.startsWith(d)) return true;
+    }
+    return false;
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────
 function shiftTime(t, o) {
     if (!t || t.includes("--")) return "--:--:--";
     let p = t.split(':'), h = parseInt(p[0]), m = parseInt(p[1]), s = parseInt(p[2]||0);
@@ -227,10 +324,12 @@ function fit(el, vhStart) {
     while (p.scrollHeight > p.clientHeight && vh > 1.0) { vh -= 0.1; el.style.fontSize = vh + "vh"; }
 }
 
+// ── CLOCK ─────────────────────────────────────────────────────────
 function updateClock() {
-    let now = new Date(); 
+    let now = new Date();
     let h = now.getHours(), hh = (h % 12 || 12), mm = String(now.getMinutes()).padStart(2, '0'), ss = String(now.getSeconds()).padStart(2, '0');
-    $('CLOCK').innerHTML = `<span class="c-unit">${hh}</span>:<span class="c-unit">${mm}</span>:<span class="c-unit">${ss}</span>`;
+    // FIX #2: hour in c-hour (hugs colon), mm/ss in c-unit (fixed width)
+    $('CLOCK').innerHTML = `<span class="c-hour">${hh}</span>:<span class="c-unit">${mm}</span>:<span class="c-unit">${ss}</span>`;
     $('ENG_DATE').innerText = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 }
 
@@ -246,22 +345,21 @@ function rotateP1() {
         $('p1').src = "https://drive.google.com/thumbnail?id=" + p1Images[p1Index] + "&sz=w1200";
         $('p1').style.opacity = 1;
         p1Index = (p1Index + 1) % p1Images.length;
-    }, 800); 
+    }, 800);
 }
 
+// ── MAIN UI UPDATE ────────────────────────────────────────────────
 function updateUI() {
-    let now = new Date(); 
+    let now = new Date();
     let h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
-
-    // --- 1. DATA PREP ---
     let cSec = (h*3600) + (m*60) + s;
     let dToday = schedule[getIso(now)]; if (!dToday) return;
-    let holidayText = dToday.holidayText || ""; 
+    let holidayText = dToday.holidayText || "";
 
-    // --- 2. THE DYNAMIC SHAVUOS STAY-AWAKE ---
+    // RULE 6: Shavuos stay-awake
     let isHolidayStayAwake = holidayText.includes("שבועות");
 
-    // --- 3. SLEEP PROTOCOL (1 AM - 5 AM) ---
+    // RULE 5: Sleep 1 AM – 5 AM
     if (!isHolidayStayAwake && h >= 1 && h < 5) {
         $('SLEEP_OVERLAY').style.display = 'block';
         $('SLEEP_CLOCK').innerText = (h % 12 || 12) + ":" + String(m).padStart(2, '0') + ":" + String(s).padStart(2, '0');
@@ -269,15 +367,15 @@ function updateUI() {
             let rx = Math.floor(Math.random() * 70) + 5, ry = Math.floor(Math.random() * 80) + 5;
             $('SLEEP_CLOCK').style.left = rx + "vw"; $('SLEEP_CLOCK').style.top = ry + "vh";
         }
-        return; 
+        return;
     } else { $('SLEEP_OVERLAY').style.display = 'none'; }
 
-    // --- 4. ZMANIM & FLIP LOGIC ---
+    // RULE 3: Date/Parsha flip at Alos; Omer flip 25m before Rabbeinu Tam
     let rtSecs = getSec(dToday.z[10], true);
     let oIso = (cSec >= (rtSecs - 1500)) ? getIso(new Date(now.getTime() + 86400000)) : getIso(now);
     let dIso = (cSec < getSec(dToday.z[0], false)) ? getIso(new Date(now.getTime() - 86400000)) : getIso(now);
     let dOmer = schedule[oIso] || dToday, dDate = schedule[dIso] || dToday;
-    
+
     if (dIso !== lastDateIso) {
         lastDateIso = dIso;
         $('DAY_LABEL').innerText = DAY_MAP[dDate.day] || dDate.day;
@@ -288,76 +386,83 @@ function updateUI() {
             $('z'+i).innerHTML = fmtZman((i === 11) ? shiftTime(bt, 1) : bt);
         }
     }
-    
+
     if (now.getDay() === 5) {
         $('row_special').style.display = 'flex';
         $('z_spec_time').innerHTML = fmtZman(shiftTime(dToday.candle || dToday.z[9], -1));
     } else { $('row_special').style.display = 'none'; }
-    
-    // --- 5. OMER / MOLED / HOLIDAY BOX ---
+
+    // RULE 7: Omer box hierarchy — Moled > Holiday > Omer > Summer
     let moledText = dDate.moled || "";
-    let isMoledTime = (cSec >= 32400 && cSec <= 45000); 
+    let isMoledTime = (cSec >= 32400 && cSec <= 45000); // 9 AM – 12:30 PM
     let omerKey = dOmer.omerNum ? String(dOmer.omerNum).trim() : null;
-    let summerMsg = dOmer.clmF || defaultSummerMsg; 
+    let summerMsg = dOmer.clmF || defaultSummerMsg;
 
     if (isMoledTime && moledText !== "") {
+        // FIX #4: start fit lower for molad (longer strings) so it doesn't overflow
         $('O2').innerText = moledText;
         $('O_BECHINA').style.display = 'none';
+        fit($('O2'), 4.2);
     } else if (holidayText !== "") {
         $('O2').innerText = holidayText;
         $('O_BECHINA').style.display = 'none';
+        fit($('O2'), 5.0);
     } else if (omerKey) {
         $('O2').innerText = "היום " + (OMER_STRINGS[omerKey] || omerKey + " יום") + " לעומר";
         if (dOmer.bechina) { $('O_BECHINA').innerText = dOmer.bechina; $('O_BECHINA').style.display = 'block'; }
         else { $('O_BECHINA').style.display = 'none'; }
+        fit($('O2'), 5.5);
+        fit($('O_BECHINA'), 3.8);
     } else {
         $('O2').innerText = summerMsg;
         $('O_BECHINA').style.display = 'none';
+        fit($('O2'), 5.5);
     }
-    fit($('O2'), 5.5); fit($('O_BECHINA'), 3.8);
 
-    // --- 6. STATUS BOX (Top Left) ---
-    let tR = (dDate.tachReason || "").trim(); 
+    // RULE 4 + 8 + 9 + 10: Status box
+    let tR = (dDate.tachReason || "").trim();
     let hText = (holidayText || "").trim();
-    
     let dayW = now.getDay();
-    let isShab = (dayW===5 && dToday.candle && cSec >= getSec(dToday.candle,true)) || (dayW===6 && cSec < rtSecs);
+    let isShab = (dayW===5 && dToday.candle && cSec >= getSec(dToday.candle, true)) || (dayW===6 && cSec < rtSecs);
     let isMotz = (dayW===6 && cSec >= rtSecs);
-    
-    let head = "";
-    let sub = "";
+
+    let head = "", sub = "", cls = "gold-box";
 
     if (isShab) {
         head = (moledText && isMoledTime) ? "שבת מברכים" : "שבת קודש";
-        sub = hText; 
-    } else if (hText !== "") { 
-        head = hText; 
-        sub = isMotz ? "ותודיענו" : tR; 
+        sub  = hText;
+    } else if (hText !== "") {
+        head = hText;
+        sub  = isMotz ? "ותודיענו" : tR;   // RULE 9
+        cls  = "teal-box";
     } else if (isMotz) {
         head = "מוצאי שבת";
-        sub = "אתה חוננתנו";
+        sub  = "אתה חוננתנו";
     } else if (tR !== "") {
         head = "אין אומרים תחנון";
-        sub = tR;
+        sub  = tR;
+        cls  = "teal-box";
     } else {
         head = "מוריד הטל";
-        sub = "ותן ברכה";
-    }
-    
-    let cls = "gold-box";
-    if (!isShab && !isMotz && (hText !== "" || tR !== "")) {
-        cls = "teal-box";
+        sub  = "ותן ברכה";
     }
 
-    let sH = `<div class="message-box ${cls}"><span id="status-head">${head}</span><span id="status-sub">${sub}</span></div>`;
-    
-    if (sH !== currentStatusHTML) { 
-        $('LEFT_MSG').innerHTML = sH; 
-        currentStatusHTML = sH; 
-        fit($('status-head'), 6.5); 
-        fit($('status-sub'), 3.5);
+    // RULE 10: Kiddush Levana line 3
+    // Suppress on Shabbos, Yom Tov, Friday, Nine Days
+    let showKL = getKiddushLevana(now, dDate.heb || "", isShab, hText, dayW);
+    let klLine = showKL ? `<span id="status-kl">קידוש לבנה</span>` : "";
+
+    let sH = `<div class="message-box ${cls}"><span id="status-head">${head}</span><span id="status-sub">${sub}</span>${klLine}</div>`;
+
+    if (sH !== currentStatusHTML) {
+        $('LEFT_MSG').innerHTML = sH;
+        currentStatusHTML = sH;
+        fit($('status-head'), 6.2);
+        fit($('status-sub'), 3.2);
+        if (showKL) fit($('status-kl'), 3.0);
     }
 
+    // Active zman highlight
     let currentZmanTimes = [];
     for(let i=1; i<=11; i++) currentZmanTimes.push({id: 'r'+i, sec: getSec(dDate.z[i-1], i>=7)});
     let nIdx = currentZmanTimes.findIndex(z => z.sec > cSec), tgtId = nIdx !== -1 ? currentZmanTimes[nIdx].id : null;
@@ -368,6 +473,7 @@ function updateUI() {
     }
 }
 
+// ── DATA LOAD ─────────────────────────────────────────────────────
 function loadData() {
     fetch(SCRIPT_URL + "?cb=" + new Date().getTime()).then(r => r.json()).then(d => {
         if (!d) return;
@@ -379,12 +485,24 @@ function loadData() {
         $('TEF').innerText = d.tefila || ""; fit($('TEF'), 4.8);
         if (d.p4) $('p4').src = "https://drive.google.com/thumbnail?id="+d.p4+"&sz=w1200";
         if (d.p5) $('p5').src = "https://drive.google.com/thumbnail?id="+d.p5+"&sz=w1200";
+
+        // Parse molad list from moled sheet data
+        // Apps Script should return d.moladList as array of strings from column A
+        moladList = [];
+        if (d.moladList && Array.isArray(d.moladList)) {
+            for (let entry of d.moladList) {
+                let parsed = parseMoladEntry(entry);
+                if (parsed) moladList.push(parsed);
+            }
+        }
     });
 }
 
-// FIX #2: updateUI() called immediately so there's no 1-second blank on load
-setInterval(updateClock, 1000); updateClock(); loadWeather(); setInterval(loadWeather, 900000);
-loadData(); setInterval(loadData, 30000); setInterval(updateUI, 1000); updateUI();
+// ── INIT ──────────────────────────────────────────────────────────
+setInterval(updateClock, 1000); updateClock();
+loadWeather(); setInterval(loadWeather, 900000);
+loadData(); setInterval(loadData, 30000);
+setInterval(updateUI, 1000); updateUI();
 </script>
 </body>
 </html>
