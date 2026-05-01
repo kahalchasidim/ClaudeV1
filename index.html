@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Bayswater Master Board</title>
-<!-- Version 2.8 – May 2026 -->
+<!-- Version 2.9 – May 2026 -->
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;700;800&family=Suez+One&display=swap');
   :root { --gold: #c29d6d; }
@@ -209,10 +209,11 @@
 
 <script>
 /**
- * THE BAYSWATER PROTOCOL — Version 2.8  |  May 2026
+ * THE BAYSWATER PROTOCOL — Version 2.9  |  May 2026
  * ─────────────────────────────────────────────────────────────────────
  * RULE 1   CLOCK           12h format, ticking seconds. Hour hugs colon (no gap on single digit).
- * RULE 2   MATH            Rabbeinu Tam = zman + 1 min. Candle lighting = raw Col S value.
+ * RULE 2   MATH            Rabbeinu Tam = Col W (72 min) + 2 min (shul minhag) = 74 min after sunset.
+ *                          Candle lighting = raw Col S value, no adjustment.
  * RULE 3   FLIP LOGIC      Date/Parsha flips at Alos. Omer flips 25 min before Rabbeinu Tam.
  * RULE 4   STATUS BOX      Priority: Shabbos > Yom Tov > Motzei Shabbos > Tachanun > Default.
  * RULE 5   NIGHT MODE      1:00 AM – 5:00 AM blackout with jumping floating clock.
@@ -423,7 +424,8 @@ function updateUI() {
     } else { $('SLEEP_OVERLAY').style.display = 'none'; }
 
     // RULE 3: Flip logic
-    let rtSecs = getSec(dToday.z[10], true);
+    // rtSecs = Rabbeinu Tam time in seconds — Col W + 2 min (shul minhag)
+    let rtSecs = getSec(dToday.z[10], true) + 120;
     let oIso   = (cSec >= rtSecs - 1500) ? getIso(new Date(now.getTime() + 86400000)) : getIso(now);
     let dIso   = (cSec < getSec(dToday.z[0], false)) ? getIso(new Date(now.getTime() - 86400000)) : getIso(now);
     let dOmer  = schedule[oIso] || dToday;
@@ -436,7 +438,8 @@ function updateUI() {
         $('PARSHA_LABEL').innerText = dDate.parsha ? "פרשת " + dDate.parsha : "";
         for (let i = 1; i <= 11; i++) {
             let bt = dDate.z[i-1];
-            $('z'+i).innerHTML = fmtZman((i === 11) ? shiftTime(bt, 1) : bt);
+            // RULE 2: Rabbeinu Tam = Col W value + 2 min (shul minhag adds 2 to the 72)
+            $('z'+i).innerHTML = fmtZman((i === 11) ? shiftTime(bt, 2) : bt);
         }
     }
 
@@ -523,29 +526,46 @@ function updateUI() {
 }
 
 // ── DATA LOAD ─────────────────────────────────────────────────────
+// FAILSAFE: last good data is preserved in localStorage so if Apps Script
+// fails temporarily, the board keeps running on cached values silently.
+// Cache is updated only when a valid response arrives.
 function loadData() {
     fetch(SCRIPT_URL + "?cb=" + new Date().getTime())
     .then(r => r.json())
     .then(d => {
-        if (!d) return;
-        schedule         = d.schedule;
-        defaultSummerMsg = d.defaultMsg || "";
-        shabbosPic       = d.shabbosPic || "";
-        p1Images         = d.p1List || [];
-        if (p1Images.length > 0 && !isShabbosImageActive && !p1RotateTimer) {
-            rotateP1();
-            p1RotateTimer = setInterval(rotateP1, 15000);
-        }
-        $('ANN').innerText = d.announcements || ""; fit($('ANN'), 4.8);
-        $('TEF').innerText = d.tefila || "";        fit($('TEF'), 4.8);
-        if (d.p4) $('p4').src = "https://drive.google.com/thumbnail?id=" + d.p4 + "&sz=w1200";
-        if (d.p5) $('p5').src = "https://drive.google.com/thumbnail?id=" + d.p5 + "&sz=w1200";
-        moladList = [];
-        if (d.moladList && Array.isArray(d.moladList)) {
-            for (let entry of d.moladList) { let p = parseMoladEntry(entry); if (p) moladList.push(p); }
-        }
+        if (!d || !d.schedule) return; // ignore empty/broken responses
+        // Save to localStorage as failsafe cache
+        try { localStorage.setItem('bayswater_cache', JSON.stringify(d)); } catch(e) {}
+        applyData(d);
     })
-    .catch(err => console.log("Data load error:", err));
+    .catch(err => {
+        console.log("Data load error (using cache):", err);
+        // On failure, try to restore from last known good cache
+        try {
+            let cached = localStorage.getItem('bayswater_cache');
+            if (cached) applyData(JSON.parse(cached));
+        } catch(e) {}
+    });
+}
+
+// Applies a data payload to the board — called from both live fetch and cache restore
+function applyData(d) {
+    schedule         = d.schedule;
+    defaultSummerMsg = d.defaultMsg || "";
+    shabbosPic       = d.shabbosPic || "";
+    p1Images         = d.p1List || [];
+    if (p1Images.length > 0 && !isShabbosImageActive && !p1RotateTimer) {
+        rotateP1();
+        p1RotateTimer = setInterval(rotateP1, 15000);
+    }
+    $('ANN').innerText = d.announcements || ""; fit($('ANN'), 4.8);
+    $('TEF').innerText = d.tefila || "";        fit($('TEF'), 4.8);
+    if (d.p4) $('p4').src = "https://drive.google.com/thumbnail?id=" + d.p4 + "&sz=w1200";
+    if (d.p5) $('p5').src = "https://drive.google.com/thumbnail?id=" + d.p5 + "&sz=w1200";
+    moladList = [];
+    if (d.moladList && Array.isArray(d.moladList)) {
+        for (let entry of d.moladList) { let p = parseMoladEntry(entry); if (p) moladList.push(p); }
+    }
 }
 
 // ── INIT ──────────────────────────────────────────────────────────
