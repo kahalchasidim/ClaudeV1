@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Bayswater Master Board</title>
-<!-- Version 2.5 – May 2026 -->
+<!-- Version 2.8 – May 2026 -->
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;700;800&family=Suez+One&display=swap');
   :root { --gold: #c29d6d; }
@@ -201,6 +201,7 @@
           <div id="O_BECHINA"></div>
         </div>
         <div class="img-box" style="flex:1.4;"><img id="p5" src="" alt=""></div>
+
       </div>
     </div>
   </div>
@@ -208,7 +209,7 @@
 
 <script>
 /**
- * THE BAYSWATER PROTOCOL — Version 2.5  |  May 2026
+ * THE BAYSWATER PROTOCOL — Version 2.8  |  May 2026
  * ─────────────────────────────────────────────────────────────────────
  * RULE 1   CLOCK           12h format, ticking seconds. Hour hugs colon (no gap on single digit).
  * RULE 2   MATH            Rabbeinu Tam = zman + 1 min. Candle lighting = raw Col S value.
@@ -226,7 +227,10 @@
  *                          Hidden after midnight (next calendar day).
  * RULE 12  SHABBOS IMAGE   p1 rotation freezes on the designated Shabbos image
  *                          (from "shabbos" subfolder in p1 Drive folder) during Shabbos/Yom Tov.
- *                          Rotation resumes after Rabbeinu Tam / end of Yom Tov.
+ *                          Shabbos: auto-detected via candle lighting / Rabbeinu Tam times.
+ *                          Yom Tov: detected from Col AA = "Y" ONLY — NOT from holidayText.
+ *                          This prevents Rosh Chodesh, fast days, Chol Hamoed from freezing image.
+ *                          Rotation resumes after Rabbeinu Tam / when Col AA is not "Y".
  * ─────────────────────────────────────────────────────────────────────
  * MOLED FORMAT (moled sheet Col A, no header):
  *   "DayName, Month DD, YYYY, H:MM am/pm and X chalakim"
@@ -242,6 +246,9 @@ var schedule = {}, moladList = [], lastDateIso = "", currentStatusHTML = "";
 var currentlyHighlightedId = null;
 var p1RotateTimer = null;
 var isShabbosImageActive = false;
+
+// Cached once — avoids querySelectorAll('.z-row') running every 10 seconds
+const allZRows = document.querySelectorAll('.z-row');
 
 const OMER_STRINGS = {
   1:"יום אחד", 2:"שני ימים", 3:"שלשה ימים", 4:"ארבעה ימים", 5:"חמשה ימים",
@@ -274,7 +281,7 @@ const OMER_STRINGS = {
 
 const DAY_MAP = {
   "Sun":"יום ראשון","Mon":"יום שני","Tue":"יום שלישי","Wed":"יום רביעי",
-  "Thu":"יום חמישי","Fri":"ערב שבת קודש","Sha":"שבת קודש","Sat":"שבת קודש"
+  "Thu":"יום חמישי","Fri":"ערב ש\"ק","Sha":"שבת קודש","Sat":"שבת קודש"
 };
 
 // ── HELPERS ───────────────────────────────────────────────────────
@@ -433,9 +440,11 @@ function updateUI() {
         }
     }
 
-    // RULE 11: Candle lighting — show when Col S has value, hide after midnight
+    // RULE 11: Candle lighting — show when Col S has value, hide after midnight.
+    // now.getHours() !== 0 is cleaner than cSec > 0 — avoids flicker if browser
+    // clock lags slightly near the midnight boundary.
     let candleTime = (dToday.candle || "").trim();
-    if (candleTime !== "" && h !== 0) {
+    if (candleTime !== "" && now.getHours() !== 0) {
         $('row_special').style.display = 'flex';
         $('z_spec_time').innerHTML = fmtZman(candleTime);
     } else {
@@ -465,8 +474,16 @@ function updateUI() {
     let tR    = (dDate.tachReason || "").trim();
     let hText = (holidayText || "").trim();
     let dayW  = now.getDay();
-    let isShab   = (dayW===5 && candleTime && cSec >= getSec(candleTime, true)) || (dayW===6 && cSec < rtSecs);
-    let isKodesh = isShab || (hText !== "" && !isShab);  // Shabbos OR Yom Tov
+    // Safer candle time → seconds conversion: parse raw, then force PM only if < noon.
+    // Prevents false detection if sheet formatting ever changes or Yom Tov edge cases occur.
+    let candleSecs = getSec(candleTime, false);
+    if (candleSecs < 43200) candleSecs += 43200; // force PM if looks like AM (< 12:00)
+    let isShab   = (dayW===5 && candleTime && cSec >= candleSecs) || (dayW===6 && cSec < rtSecs);
+    // RULE 12: isYomTov uses dedicated Col AA flag ("Y") — NOT holidayText.
+    // This prevents Rosh Chodesh, fast days, Chol Hamoed etc. from freezing the image.
+    // Only days explicitly marked Y in Col AA will trigger the Shabbos image.
+    let isYomTov = (dToday.yomtov === "Y");
+    let isKodesh = isShab || isYomTov;
     let isMotz   = (dayW===6 && cSec >= rtSecs);
 
     let head = "", sub = "", cls = "gold-box";
@@ -495,11 +512,11 @@ function updateUI() {
     // RULE 12: Shabbos/Yom Tov image freeze
     updateP1Image(isKodesh);
 
-    // Active zman highlight
+    // Active zman highlight — uses cached allZRows (not querySelectorAll every 10 sec)
     let zT = []; for (let i=1; i<=11; i++) zT.push({id:'r'+i, sec: getSec(dDate.z[i-1], i>=7)});
     let nIdx = zT.findIndex(z => z.sec > cSec), tgtId = nIdx !== -1 ? zT[nIdx].id : null;
     if (tgtId !== currentlyHighlightedId) {
-        document.querySelectorAll('.z-row').forEach(r => r.classList.remove('active-zman'));
+        allZRows.forEach(r => r.classList.remove('active-zman'));
         if (tgtId && $(tgtId)) $(tgtId).classList.add('active-zman');
         currentlyHighlightedId = tgtId;
     }
@@ -532,10 +549,15 @@ function loadData() {
 }
 
 // ── INIT ──────────────────────────────────────────────────────────
+// updateClock: every 1 second — only updates the clock digits and date string.
+// updateUI:    every 10 seconds — handles zmanim, status box, Omer, Kiddush Levana,
+//              candle lighting, image freeze, active zman highlight.
+//              10 sec is fast enough to catch any zman transition within 10 seconds,
+//              but 6× lighter than running every second.
 setInterval(updateClock, 1000); updateClock();
 loadWeather(); setInterval(loadWeather, 900000);
 loadData();    setInterval(loadData, 30000);
-setInterval(updateUI, 1000); updateUI();
+setInterval(updateUI, 10000); updateUI();
 </script>
 </body>
 </html>
