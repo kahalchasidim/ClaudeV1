@@ -85,7 +85,7 @@
   .message-box {
     width: 100%; height: 100%;
     display: flex; flex-direction: column;
-    align-items: center; justify-content: space-evenly;
+    align-items: center; justify-content: center;
     text-align: center; padding: 4px 10px;
   }
   .teal-box { background: #004d40; color: #00bfa5; }
@@ -132,11 +132,10 @@
     position: absolute; top: 0; left: 0; transition: opacity 0.8s ease-in-out;
   }
   .omer-box {
-    flex: 1; border: 2px solid var(--gold); border-radius: 10px;
+    flex: 1.3; border: 2px solid var(--gold); border-radius: 10px;
     background: #001f1a; display: flex; flex-direction: column;
     align-items: center; justify-content: center;
     padding: 4px 6px; text-align: center; overflow: hidden;
-    min-width: 0; max-height: 100%;
   }
   #O2 { color: var(--gold); font-weight: 800; line-height: 1.0; width: 96%; display: block; margin: 0 auto; word-wrap: break-word; overflow: hidden; }
   #O_BECHINA { font-size: 3.5vh; color: #fff; border-top: 1px solid #444; padding-top: 2px; margin-top: 4px; width: 90%; overflow: hidden; }
@@ -196,12 +195,12 @@
         <div class="data-box" style="flex:1.2;"><span id="TEF">טוען מידע...</span></div>
       </div>
       <div style="height:49%; display:flex; gap:10px;">
-        <div class="img-box" style="flex:1;"><img id="p4" src="" alt=""></div>
-        <div class="omer-box" id="OMER" style="flex:1;">
+        <div class="img-box" style="flex:1.4;"><img id="p4" src="" alt=""></div>
+        <div class="omer-box" id="OMER" style="flex:1.3;">
           <span id="O2">טוען...</span>
           <div id="O_BECHINA"></div>
         </div>
-        <div class="img-box" style="flex:1;"><img id="p5" src="" alt=""></div>
+        <div class="img-box" style="flex:1.4;"><img id="p5" src="" alt=""></div>
       </div>
     </div>
   </div>
@@ -471,7 +470,7 @@ function updateUI() {
         $('O2').innerText = "היום " + (OMER_STRINGS[omerKey] || omerKey + " יום") + " לעומר";
         if (dOmer.bechina) { $('O_BECHINA').innerText = dOmer.bechina; $('O_BECHINA').style.display = 'block'; }
         else { $('O_BECHINA').style.display = 'none'; }
-        fit($('O2'), 5.5); fit($('O_BECHINA'), 3.8);
+        fit($('O2'), 4.0); fit($('O_BECHINA'), 3.8);
     } else {
         // 3rd: Summer/default message
         $('O2').innerText = summerMsg; $('O_BECHINA').style.display = 'none'; fit($('O2'), 5.5);
@@ -509,11 +508,14 @@ function updateUI() {
     // RULE 10: Kiddush Levana
     let showKL = getKiddushLevana(now, dDate.heb || "", isShab, hText, dayW);
     let klLine = showKL ? `<span id="status-kl">קידוש לבנה</span>` : "";
-    let sH = `<div class="message-box ${cls}"><span id="status-head">${head}</span><span id="status-sub">${sub}</span>${klLine}</div>`;
+    let hasExtra = sub || showKL;
+    let headSize = hasExtra ? 6.2 : 8.5;
+    let sH = `<div class="message-box ${cls}" style="justify-content:${hasExtra ? 'space-evenly' : 'center'}"><span id="status-head" style="font-size:${headSize}vh">${head}</span>${sub ? `<span id="status-sub">${sub}</span>` : ''}${klLine}</div>`;
     if (sH !== currentStatusHTML) {
         $('LEFT_MSG').innerHTML = sH; currentStatusHTML = sH;
-        fit($('status-head'), 6.2); fit($('status-sub'), 3.2);
-        if (showKL) fit($('status-kl'), 3.0);
+        fit(document.getElementById('status-head'), headSize);
+        if (sub) fit(document.getElementById('status-sub'), 3.2);
+        if (showKL) fit(document.getElementById('status-kl'), 3.0);
     }
 
     // RULE 12: Shabbos/Yom Tov image freeze
