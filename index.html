@@ -132,10 +132,11 @@
     position: absolute; top: 0; left: 0; transition: opacity 0.8s ease-in-out;
   }
   .omer-box {
-    flex: 1.3; border: 2px solid var(--gold); border-radius: 10px;
+    flex: 1; border: 2px solid var(--gold); border-radius: 10px;
     background: #001f1a; display: flex; flex-direction: column;
     align-items: center; justify-content: center;
     padding: 4px 6px; text-align: center; overflow: hidden;
+    min-width: 0; max-height: 100%;
   }
   #O2 { color: var(--gold); font-weight: 800; line-height: 1.0; width: 96%; display: block; margin: 0 auto; word-wrap: break-word; overflow: hidden; }
   #O_BECHINA { font-size: 3.5vh; color: #fff; border-top: 1px solid #444; padding-top: 2px; margin-top: 4px; width: 90%; overflow: hidden; }
@@ -195,13 +196,12 @@
         <div class="data-box" style="flex:1.2;"><span id="TEF">טוען מידע...</span></div>
       </div>
       <div style="height:49%; display:flex; gap:10px;">
-        <div class="img-box" style="flex:1.4;"><img id="p4" src="" alt=""></div>
-        <div class="omer-box" id="OMER">
+        <div class="img-box" style="flex:1;"><img id="p4" src="" alt=""></div>
+        <div class="omer-box" id="OMER" style="flex:1;">
           <span id="O2">טוען...</span>
           <div id="O_BECHINA"></div>
         </div>
-        <div class="img-box" style="flex:1.4;"><img id="p5" src="" alt=""></div>
-
+        <div class="img-box" style="flex:1;"><img id="p5" src="" alt=""></div>
       </div>
     </div>
   </div>
