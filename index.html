@@ -218,7 +218,8 @@
  * RULE 4   STATUS BOX      Priority: Shabbos > Yom Tov > Motzei Shabbos > Tachanun > Default.
  * RULE 5   NIGHT MODE      1:00 AM – 5:00 AM blackout with jumping floating clock.
  * RULE 6   STAY AWAKE      Night mode disabled when Col D contains "שבועות".
- * RULE 7   OMER BOX        Hierarchy: Moled (9–12:30) > Holiday > Omer count > Summer msg.
+ * RULE 7   OMER BOX        Hierarchy: Moled (9–12:30) > Omer count > Summer/default msg.
+ *                          Col D (holiday text) is ONLY for the status box — never the Omer box.
  * RULE 8   HOLIDAY PRIO    Col D overrides Motzei Shabbos and Tachanun labels.
  * RULE 9   VATODIEINU      Sat night + Col D → "ותודיענו" not "אתה חוננתנו".
  * RULE 10  KIDDUSH LEVANA  Line 3 of status box, 168h–360h after molad.
@@ -455,21 +456,24 @@ function updateUI() {
     }
 
     // RULE 7: Omer box hierarchy
-    let moledText  = dDate.moled || "";
+    // Col D (holidayText) is ONLY for the status box — never shown in the Omer box.
+    // Omer box shows: Molad (9am-12:30pm) → Omer count → Summer/default message
+    let moledText   = dDate.moled || "";
     let isMoledTime = (cSec >= 32400 && cSec <= 45000);
-    let omerKey    = dOmer.omerNum ? String(dOmer.omerNum).trim() : null;
-    let summerMsg  = dOmer.clmF || defaultSummerMsg;
+    let omerKey     = dOmer.omerNum ? String(dOmer.omerNum).trim() : null;
+    let summerMsg   = dOmer.clmF || defaultSummerMsg;
 
     if (isMoledTime && moledText !== "") {
+        // 1st: Molad display (9am-12:30pm only)
         $('O2').innerText = moledText; $('O_BECHINA').style.display = 'none'; fit($('O2'), 4.2);
-    } else if (holidayText !== "") {
-        $('O2').innerText = holidayText; $('O_BECHINA').style.display = 'none'; fit($('O2'), 5.0);
     } else if (omerKey) {
+        // 2nd: Omer count — always during Sefirah
         $('O2').innerText = "היום " + (OMER_STRINGS[omerKey] || omerKey + " יום") + " לעומר";
         if (dOmer.bechina) { $('O_BECHINA').innerText = dOmer.bechina; $('O_BECHINA').style.display = 'block'; }
         else { $('O_BECHINA').style.display = 'none'; }
         fit($('O2'), 5.5); fit($('O_BECHINA'), 3.8);
     } else {
+        // 3rd: Summer/default message
         $('O2').innerText = summerMsg; $('O_BECHINA').style.display = 'none'; fit($('O2'), 5.5);
     }
 
