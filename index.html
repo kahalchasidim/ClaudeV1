@@ -214,7 +214,9 @@
  * RULE 2   MATH            Rabbeinu Tam = Col W (72 min) + 2 min (shul minhag) = 74 min after sunset.
  *                          Candle lighting = raw Col S value, no adjustment.
  * RULE 3   FLIP LOGIC      Date/Parsha flips at Alos. Omer flips 25 min before Rabbeinu Tam.
- * RULE 4   STATUS BOX      Priority: Shabbos > Yom Tov > Motzei Shabbos > Tachanun > Default.
+ * RULE 4   STATUS BOX      Priority: Shabbos > Motzei Shabbos > Motzei YomTov > Col D/Tachanun (before RT only) > Default.
+ *                          After Rabbeinu Tam on weekday: Col D and tachanun override both revert to default.
+ *                          After Rabbeinu Tam on Yom Tov (Col AA=Y): shows מוצאי יום טוב.
  * RULE 5   NIGHT MODE      1:00 AM – 5:00 AM blackout with jumping floating clock.
  * RULE 6   STAY AWAKE      Night mode disabled when Col D contains "שבועות".
  * RULE 7   OMER BOX        Hierarchy: Moled (9–12:30) > Omer count > Summer/default msg.
@@ -487,27 +489,35 @@ function updateUI() {
     let hText = (holidayText || "").trim();
     let dayW  = now.getDay();
     // Safer candle time → seconds conversion: parse raw, then force PM only if < noon.
-    // Prevents false detection if sheet formatting ever changes or Yom Tov edge cases occur.
     let candleSecs = getSec(candleTime, false);
-    if (candleSecs < 43200) candleSecs += 43200; // force PM if looks like AM (< 12:00)
-    let isShab   = (dayW===5 && candleTime && cSec >= candleSecs) || (dayW===6 && cSec < rtSecs);
-    // RULE 12: isYomTov uses dedicated Col AA flag ("Y") — NOT holidayText.
-    // This prevents Rosh Chodesh, fast days, Chol Hamoed etc. from freezing the image.
-    // Only days explicitly marked Y in Col AA will trigger the Shabbos image.
-    let isYomTov = (dToday.yomtov === "Y");
-    let isKodesh = isShab || isYomTov;
-    let isMotz   = (dayW===6 && cSec >= rtSecs);
+    if (candleSecs < 43200) candleSecs += 43200;
+    let isShab    = (dayW===5 && candleTime && cSec >= candleSecs) || (dayW===6 && cSec < rtSecs);
+    let isYomTov  = (dToday.yomtov === "Y");
+    let isKodesh  = isShab || isYomTov;
+    let isMotz    = (dayW===6 && cSec >= rtSecs);
+    // After Rabbeinu Tam on a weekday — Col D and tachanun no longer show
+    let isPastRT  = (cSec >= rtSecs);
 
     let head = "", sub = "", cls = "gold-box";
     if (isShab) {
+        // Shabbos — unchanged
         head = (moledText && isMoledTime) ? "שבת מברכים" : "שבת קודש"; sub = hText;
-    } else if (hText !== "") {
-        head = hText; sub = isMotz ? "ותודיענו" : tR; cls = "teal-box";
     } else if (isMotz) {
-        head = "מוצאי שבת"; sub = "אתה חוננתנו";
-    } else if (tR !== "") {
+        // Motzei Shabbos — unchanged, Col D + ותודיענו or plain
+        head = hText !== "" ? hText : "מוצאי שבת";
+        sub  = hText !== "" ? "ותודיענו" : "אתה חוננתנו";
+        if (hText !== "") cls = "teal-box";
+    } else if (isYomTov && isPastRT) {
+        // After RT on Yom Tov day (Col AA = Y) → מוצאי יום טוב
+        head = "מוצאי יום טוב"; sub = ""; cls = "gold-box";
+    } else if (hText !== "" && !isPastRT) {
+        // Col D text — only before RT
+        head = hText; sub = tR; cls = "teal-box";
+    } else if (tR !== "" && !isPastRT) {
+        // Tachanun override — only before RT
         head = "אין אומרים תחנון"; sub = tR; cls = "teal-box";
     } else {
+        // Default — מוריד הטל / ותן ברכה
         head = "מוריד הטל"; sub = "ותן ברכה";
     }
 
@@ -593,3 +603,4 @@ setInterval(updateUI, 10000); updateUI();
 </script>
 </body>
 </html>
+
