@@ -385,6 +385,7 @@ var selichotStartIso = null;    // the Saturday whose night Selichot begins
 var p1RotateTimer = null, isShabbosImageActive = false;
 var currentlyHighlightedId = null, currentStatusHTML = "", lastDateIso = "";
 var defaultSummerMsg = "", omerPic = "";
+var nightModeOverride = false;
 
 const allZRows = document.querySelectorAll('.z-row');
 const THREE_AM = 10800;
@@ -1196,7 +1197,11 @@ function updateUI() {
     let isHolidayStayAwake = holidayText.includes("שבועות");
 
     // RULE 5: NIGHT MODE (1-5 AM)
-    if (!isHolidayStayAwake && h >= 1 && h < 5) {
+    // Manual override (nightModeOverride, set via the manager app for
+    // holidays/events/late-night programs) is checked alongside the
+    // existing automatic Shavuot exception — either one skips the
+    // overlay for the night.
+    if (!isHolidayStayAwake && !nightModeOverride && h >= 1 && h < 5) {
         $('SLEEP_OVERLAY').style.display = 'block';
         $('SLEEP_CLOCK').innerText = (h%12||12) + ":" + String(m).padStart(2,'0') + ":" + String(s).padStart(2,'0');
         if (s === 0) {
@@ -2014,6 +2019,7 @@ function loadData() {
         computeSeasonDates();
         defaultSummerMsg = d.defaultMsg || "";
         omerPic = d.omerPic || "";
+        nightModeOverride = d.nightModeOverride === true;
         p1Images    = d.p1List || [];
         shabbosPic  = d.shabbosPic || "";
         p1Rotation  = d.p1Rotation !== false;
